@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Notes & Tweet Studio</title>
+    <meta name="description" content="Track Google BigQuery release notes in real-time, filter updates, and tweet insights directly.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-background"></div>
+    
+    <div class="app-container">
+        <!-- Top Navigation / Header -->
+        <header class="app-header">
+            <div class="brand-group">
+                <div class="brand-logo">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3Z" stroke="#4285F4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 7H17M7 12H17M7 17H13" stroke="#8AB4F8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="16.5" cy="16.5" r="2.5" fill="#34A853"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="brand-title">BigQuery Pulse</h1>
+                    <p class="brand-subtitle">Release Notes Tracker & Tweet Studio</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="live-status-badge" id="liveStatusBadge">
+                    <span class="pulse-dot"></span>
+                    <span class="status-text" id="statusText">Connected to RSS</span>
+                </div>
+
+                <button id="refreshBtn" class="btn btn-primary" onclick="refreshNotes(true)" title="Fetch latest release notes">
+                    <svg id="spinnerIcon" class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span id="refreshBtnLabel">Refresh Feed</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <section class="stats-bar">
+            <div class="stat-card">
+                <span class="stat-label">Total Entries</span>
+                <span class="stat-value" id="statTotalEntries">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total Updates</span>
+                <span class="stat-value" id="statTotalItems">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Latest Date</span>
+                <span class="stat-value highlight" id="statLatestDate">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Feed Source</span>
+                <span class="stat-value small">Google Cloud RSS</span>
+            </div>
+        </section>
+
+        <!-- Search & Filter Controls -->
+        <section class="controls-section">
+            <div class="search-box">
+                <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Search BigQuery features, SQL syntax, Iceberg, AI... (Cmd + K)" oninput="handleSearch()">
+                <button id="clearSearchBtn" class="clear-btn hidden" onclick="clearSearch()">✕</button>
+            </div>
+
+            <div class="filter-tabs" id="filterTabs">
+                <button class="tab-btn active" data-type="ALL" onclick="setFilter('ALL')">All Updates</button>
+                <button class="tab-btn" data-type="Feature" onclick="setFilter('Feature')">Features</button>
+                <button class="tab-btn" data-type="Announcement" onclick="setFilter('Announcement')">Announcements</button>
+                <button class="tab-btn" data-type="Issue" onclick="setFilter('Issue')">Issues & Deprecations</button>
+            </div>
+        </section>
+
+        <!-- Results Counter & Info Bar -->
+        <div class="results-meta">
+            <span id="resultsCount">Showing release notes...</span>
+            <span id="lastFetchedTime" class="last-fetched">Last refreshed: --</span>
+        </div>
+
+        <!-- Main Feed Content Area -->
+        <main id="feedContent" class="feed-content">
+            <!-- Loading Skeleton -->
+            <div id="loadingSkeleton" class="loading-state">
+                <div class="skeleton-header"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Tweet Studio Native Dialog Modal -->
+    <dialog id="tweetDialog" class="tweet-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <h2>Tweet Studio</h2>
+                </div>
+                <button class="close-btn" onclick="closeTweetStudio()">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Context card for the update being tweeted -->
+                <div class="update-preview-box">
+                    <div class="update-preview-meta">
+                        <span id="tweetItemDate" class="date-tag">Date</span>
+                        <span id="tweetItemType" class="badge">Type</span>
+                    </div>
+                    <p id="tweetItemSnippet" class="update-preview-text">Snippet text...</p>
+                </div>
+
+                <!-- Template Preset Buttons -->
+                <div class="preset-selector">
+                    <label class="section-label">Choose Preset Style:</label>
+                    <div class="preset-buttons">
+                        <button class="preset-btn active" onclick="applyTweetPreset('standard')">Standard</button>
+                        <button class="preset-btn" onclick="applyTweetPreset('headline')">Headline 🚀</button>
+                        <button class="preset-btn" onclick="applyTweetPreset('breakdown')">Breakdown 📊</button>
+                        <button class="preset-btn" onclick="applyTweetPreset('tldr')">TL;DR 💡</button>
+                    </div>
+                </div>
+
+                <!-- Editable Tweet Text Box -->
+                <div class="tweet-editor">
+                    <label class="section-label" for="tweetTextarea">Compose Tweet:</label>
+                    <textarea id="tweetTextarea" rows="6" oninput="updateCharCount()" placeholder="Draft your tweet here..."></textarea>
+                    
+                    <div class="char-count-bar">
+                        <span id="charCountLabel">0 / 280 characters</span>
+                        <div class="char-progress-track">
+                            <div id="charProgressBar" class="char-progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Hashtags Adder -->
+                <div class="hashtag-selector">
+                    <label class="section-label">Add Hashtags:</label>
+                    <div class="hashtag-chips">
+                        <button class="chip" onclick="toggleHashtag('#BigQuery')">+ #BigQuery</button>
+                        <button class="chip" onclick="toggleHashtag('#GoogleCloud')">+ #GoogleCloud</button>
+                        <button class="chip" onclick="toggleHashtag('#DataEngineering')">+ #DataEngineering</button>
+                        <button class="chip" onclick="toggleHashtag('#SQL')">+ #SQL</button>
+                        <button class="chip" onclick="toggleHashtag('#GCP')">+ #GCP</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="copyTweetText()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy Text
+                </button>
+                <button class="btn btn-twitter" onclick="launchTwitterIntent()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    Post on X / Twitter
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast hidden">
+        <span id="toastMessage">Notification</span>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
