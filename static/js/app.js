@@ -212,6 +212,23 @@ function applyFilters() {
     renderFeed();
 }
 
+// Highlight Search Keywords Safely in HTML
+function highlightMatches(htmlContent, query) {
+    if (!query || !query.trim()) return htmlContent;
+
+    const safeQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${safeQuery})`, 'gi');
+
+    // Split HTML by tags to safely modify text nodes only without touching tag attributes
+    const parts = htmlContent.split(/(<[^>]+>)/g);
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i] && !parts[i].startsWith('<')) {
+            parts[i] = parts[i].replace(regex, '<mark class="search-highlight">$1</mark>');
+        }
+    }
+    return parts.join('');
+}
+
 // Render Timeline Feed Cards
 function renderFeed() {
     const feedContent = document.getElementById('feedContent');
@@ -259,6 +276,7 @@ function renderFeed() {
 
         itemsForDate.forEach(item => {
             const badgeClass = getBadgeClass(item.type);
+            const highlightedHtml = highlightMatches(item.html, state.searchQuery);
 
             html += `
                 <article class="item-card" id="${item.item_id}">
@@ -270,7 +288,7 @@ function renderFeed() {
                     </div>
                     
                     <div class="item-body">
-                        ${item.html}
+                        ${highlightedHtml}
                     </div>
 
                     <div class="item-actions">
