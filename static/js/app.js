@@ -10,16 +10,56 @@ let state = {
     searchQuery: '',
     currentSelectedItem: null,
     currentPresetStyle: 'standard',
-    isFetching: false
+    isFetching: false,
+    theme: 'dark'
 };
 
 // Initialize App on DOM Load
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     initKeyboardShortcuts();
     refreshNotes(false);
 });
 
-// Fetch Release Notes from Flask Backend
+/* ==========================================================================
+   Theme Switcher (Dark / Light Mode)
+   ========================================================================== */
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+}
+
+function toggleTheme() {
+    const newTheme = state.theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    showToast(`Switched to ${newTheme === 'dark' ? 'Dark' : 'Light'} Mode`);
+}
+
+function setTheme(theme) {
+    state.theme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+
+    const moonIcon = document.getElementById('themeMoonIcon');
+    const sunIcon = document.getElementById('themeSunIcon');
+    const label = document.getElementById('themeToggleLabel');
+
+    if (theme === 'light') {
+        moonIcon.classList.add('hidden');
+        sunIcon.classList.remove('hidden');
+        label.textContent = 'Dark Mode';
+    } else {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+        label.textContent = 'Light Mode';
+    }
+}
+
+/* ==========================================================================
+   Fetch Release Notes & Data Operations
+   ========================================================================== */
+
 async function refreshNotes(force = false) {
     if (state.isFetching) return;
     
@@ -28,7 +68,6 @@ async function refreshNotes(force = false) {
     const spinner = document.getElementById('spinnerIcon');
     const btnLabel = document.getElementById('refreshBtnLabel');
     const feedContent = document.getElementById('feedContent');
-    const loadingSkeleton = document.getElementById('loadingSkeleton');
 
     refreshBtn.disabled = true;
     spinner.classList.add('spinning');
@@ -241,12 +280,12 @@ function renderFeed() {
                             </svg>
                             Tweet Update
                         </button>
-                        <button class="action-btn" onclick="copyUpdateText('${item.item_id}')" title="Copy update text">
+                        <button class="action-btn" onclick="copyUpdateText('${item.item_id}')" title="Copy update text to clipboard">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                             </svg>
-                            Copy Text
+                            Copy Content
                         </button>
                     </div>
                 </article>
@@ -269,6 +308,51 @@ function getBadgeClass(typeStr) {
     if (lower.includes('announcement')) return 'badge-announcement';
     if (lower.includes('issue') || lower.includes('deprecated') || lower.includes('fix')) return 'badge-issue';
     return 'badge-general';
+}
+
+/* ==========================================================================
+   Export to CSV Feature
+   ========================================================================== */
+
+function exportToCSV() {
+    if (!state.filteredItems || state.filteredItems.length === 0) {
+        showToast('No release notes available to export.');
+        return;
+    }
+
+    const headers = ['Date', 'Category', 'Summary Text', 'Direct Link', 'ISO Timestamp'];
+    const rows = [headers];
+
+    state.filteredItems.forEach(item => {
+        const cleanText = (item.text || '').replace(/"/g, '""');
+        const cleanDate = (item.date || '').replace(/"/g, '""');
+        const cleanType = (item.type || '').replace(/"/g, '""');
+        const cleanLink = (item.link || '').replace(/"/g, '""');
+        const cleanIso = (item.pub_iso || '').replace(/"/g, '""');
+
+        rows.push([
+            `"${cleanDate}"`,
+            `"${cleanType}"`,
+            `"${cleanText}"`,
+            `"${cleanLink}"`,
+            `"${cleanIso}"`
+        ]);
+    });
+
+    const csvContent = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const dateSlug = new Date().toISOString().slice(0, 10);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `bigquery_release_notes_${dateSlug}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast(`Exported ${state.filteredItems.length} update(s) to CSV!`);
 }
 
 /* ==========================================================================
@@ -354,7 +438,6 @@ async function generateTweetDraft() {
         }
     } catch (err) {
         console.error('Error generating tweet draft:', err);
-        // Fallback local tweet draft
         const fallbackTweet = `✨ BigQuery ${item.type} (${item.date})\n\n${item.text}\n\n🔗 ${item.link}\n\n#BigQuery #GoogleCloud`;
         document.getElementById('tweetTextarea').value = fallbackTweet;
         updateCharCount();
@@ -421,9 +504,9 @@ function copyUpdateText(itemId) {
     const item = state.flattenedItems.find(i => i.item_id === itemId);
     if (!item) return;
 
-    const copyPayload = `BigQuery Release Note (${item.date} - ${item.type}):\n${item.text}\nLink: ${item.link}`;
+    const copyPayload = `BigQuery Release Note (${item.date} - ${item.type}):\n${item.text}\nDirect Link: ${item.link}`;
     navigator.clipboard.writeText(copyPayload).then(() => {
-        showToast('Update text copied to clipboard!');
+        showToast('Content copied to clipboard!');
     }).catch(err => {
         showToast('Failed to copy text.');
     });
@@ -451,13 +534,10 @@ function escapeHtml(str) {
 
 function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        // Cmd/Ctrl + K to focus search bar
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
             e.preventDefault();
             document.getElementById('searchInput').focus();
         }
-        
-        // Escape closes tweet dialog
         if (e.key === 'Escape') {
             closeTweetStudio();
         }

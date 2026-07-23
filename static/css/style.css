@@ -2,7 +2,7 @@
    BigQuery Pulse - Modern Design System & CSS
    ========================================================================== */
 
-:root {
+:root, [data-theme="dark"] {
     --bg-main: #0b0f19;
     --bg-card: #151d30;
     --bg-card-hover: #1c2742;
@@ -33,6 +33,23 @@
     --shadow-glow: 0 0 25px rgba(66, 133, 244, 0.15);
 }
 
+/* Light Theme Variables Override */
+[data-theme="light"] {
+    --bg-main: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8fafc;
+    --bg-card-secondary: #f1f5f9;
+    --border-color: #cbd5e1;
+    --border-highlight: rgba(66, 133, 244, 0.5);
+
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+
+    --shadow-card: 0 4px 20px -5px rgba(0, 0, 0, 0.08);
+    --shadow-glow: 0 0 20px rgba(66, 133, 244, 0.12);
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -47,6 +64,7 @@ body {
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Background subtle ambient glow */
@@ -107,7 +125,7 @@ body {
     font-size: 1.75rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #ffffff 30%, var(--accent-blue-light) 100%);
+    background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-blue) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -152,6 +170,28 @@ body {
     100% { transform: scale(0.95); opacity: 0.8; }
 }
 
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.95rem;
+    border-radius: var(--radius-full);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-1px);
+}
+
 /* Buttons */
 .btn {
     display: inline-flex;
@@ -179,19 +219,29 @@ body {
     box-shadow: 0 6px 20px rgba(66, 133, 244, 0.45);
 }
 
-.btn-primary:active {
-    transform: translateY(0);
-}
-
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-card-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--bg-card-hover);
+    border-color: var(--border-highlight);
+}
+
+.btn-export {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--accent-green);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 0.65rem 1.1rem;
+    white-space: nowrap;
+}
+
+.btn-export:hover {
+    background: rgba(16, 185, 129, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 
 .btn-twitter {
@@ -240,6 +290,7 @@ body {
     flex-direction: column;
     gap: 0.35rem;
     box-shadow: var(--shadow-card);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .stat-label {
@@ -257,7 +308,7 @@ body {
 }
 
 .stat-value.highlight {
-    color: var(--accent-blue-light);
+    color: var(--accent-blue);
 }
 
 .stat-value.small {
@@ -266,7 +317,7 @@ body {
 }
 
 /* ==========================================================================
-   Controls: Search & Filter Tabs
+   Controls: Search & Filter Tabs & Export Row
    ========================================================================== */
 .controls-section {
     display: flex;
@@ -275,9 +326,15 @@ body {
     margin-bottom: 1.5rem;
 }
 
+.search-and-export-row {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+}
+
 .search-box {
     position: relative;
-    width: 100%;
+    flex-grow: 1;
 }
 
 .search-icon {
@@ -333,7 +390,7 @@ body {
 .tab-btn {
     padding: 0.5rem 1.1rem;
     border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     font-family: var(--font-sans);
@@ -345,14 +402,14 @@ body {
 }
 
 .tab-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-card-hover);
     color: var(--text-primary);
 }
 
 .tab-btn.active {
     background: rgba(66, 133, 244, 0.15);
     border-color: var(--accent-blue);
-    color: var(--accent-blue-light);
+    color: var(--accent-blue);
 }
 
 /* Results Meta */
@@ -415,9 +472,9 @@ body {
 }
 
 .item-card:hover {
-    border-color: rgba(66, 133, 244, 0.4);
+    border-color: var(--border-highlight);
     transform: translateY(-2px);
-    box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.15);
 }
 
 .item-card-header {
@@ -440,25 +497,25 @@ body {
 
 .badge-feature {
     background: rgba(16, 185, 129, 0.12);
-    color: #34d399;
+    color: #10b981;
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .badge-announcement {
     background: rgba(168, 85, 247, 0.12);
-    color: #c084fc;
+    color: #a855f7;
     border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .badge-issue {
     background: rgba(245, 158, 11, 0.12);
-    color: #fbbf24;
+    color: #d97706;
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .badge-general {
     background: rgba(66, 133, 244, 0.12);
-    color: #60a5fa;
+    color: #2563eb;
     border: 1px solid rgba(66, 133, 244, 0.3);
 }
 
@@ -469,13 +526,9 @@ body {
 }
 
 .item-body a {
-    color: var(--accent-blue-light);
+    color: var(--accent-blue);
     text-decoration: underline;
     text-underline-offset: 3px;
-}
-
-.item-body a:hover {
-    color: #ffffff;
 }
 
 .item-body code {
@@ -484,8 +537,8 @@ body {
     padding: 0.2rem 0.4rem;
     border-radius: 4px;
     font-size: 0.85em;
-    color: #e2e8f0;
-    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
 }
 
 .item-actions {
@@ -493,7 +546,7 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding-top: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    border-top: 1px solid var(--border-color);
 }
 
 .action-btn {
@@ -505,7 +558,7 @@ body {
     font-family: var(--font-sans);
     font-size: 0.8rem;
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-card-secondary);
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
     cursor: pointer;
@@ -513,20 +566,20 @@ body {
 }
 
 .action-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-card-hover);
     color: var(--text-primary);
+    border-color: var(--border-highlight);
 }
 
 .action-btn.tweet-btn {
-    background: rgba(255, 255, 255, 0.08);
+    background: #000000;
     color: #ffffff;
     border-color: rgba(255, 255, 255, 0.2);
 }
 
 .action-btn.tweet-btn:hover {
-    background: #000000;
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background: #111111;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Loading & Empty States */
@@ -542,14 +595,14 @@ body {
 .skeleton-header {
     height: 24px;
     width: 200px;
-    background: rgba(255,255,255,0.05);
+    background: var(--border-color);
     border-radius: 4px;
     margin-bottom: 1rem;
 }
 
 .skeleton-card {
     height: 120px;
-    background: rgba(255,255,255,0.03);
+    background: var(--bg-card-secondary);
     border-radius: var(--radius-md);
     margin-bottom: 1rem;
 }
@@ -561,18 +614,18 @@ body {
     margin: auto;
     border: 1px solid var(--border-highlight);
     border-radius: var(--radius-lg);
-    background: #111827;
+    background: var(--bg-card);
     color: var(--text-primary);
     padding: 0;
     width: 90%;
     max-width: 620px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), var(--shadow-glow);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), var(--shadow-glow);
     overflow: hidden;
 }
 
 .tweet-modal::backdrop {
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
 }
 
 .modal-content {
@@ -585,7 +638,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 1.25rem 1.5rem;
-    background: var(--bg-card);
+    background: var(--bg-card-secondary);
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -666,7 +719,7 @@ body {
 .preset-btn {
     padding: 0.4rem 0.85rem;
     border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-card-secondary);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     font-size: 0.8rem;
@@ -676,14 +729,14 @@ body {
 }
 
 .preset-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-card-hover);
     color: var(--text-primary);
 }
 
 .preset-btn.active {
-    background: rgba(66, 133, 244, 0.2);
+    background: rgba(66, 133, 244, 0.15);
     border-color: var(--accent-blue);
-    color: var(--accent-blue-light);
+    color: var(--accent-blue);
 }
 
 .tweet-editor textarea {
@@ -716,7 +769,7 @@ body {
 .char-progress-track {
     width: 120px;
     height: 6px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--border-color);
     border-radius: var(--radius-full);
     overflow: hidden;
 }
@@ -745,7 +798,7 @@ body {
 .chip {
     padding: 0.3rem 0.65rem;
     border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-card-secondary);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     font-size: 0.75rem;
@@ -756,7 +809,7 @@ body {
 
 .chip:hover {
     background: rgba(66, 133, 244, 0.15);
-    color: var(--accent-blue-light);
+    color: var(--accent-blue);
     border-color: var(--accent-blue);
 }
 
@@ -765,7 +818,7 @@ body {
     justify-content: flex-end;
     gap: 0.75rem;
     padding: 1.25rem 1.5rem;
-    background: var(--bg-card);
+    background: var(--bg-card-secondary);
     border-top: 1px solid var(--border-color);
 }
 
@@ -776,12 +829,12 @@ body {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    background: #1e293b;
-    color: #ffffff;
+    background: var(--bg-card);
+    color: var(--text-primary);
     padding: 0.85rem 1.4rem;
     border-radius: var(--radius-md);
     border: 1px solid var(--accent-blue);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     font-size: 0.875rem;
     font-weight: 600;
     z-index: 100;
